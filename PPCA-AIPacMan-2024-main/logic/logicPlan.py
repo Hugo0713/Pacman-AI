@@ -644,11 +644,64 @@ def slam(problem, agent) -> Generator:
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    '''
+    请按照我们的伪代码实现该函数：
+
+    获取 Pacman 的初始位置 (pac_x_0, pac_y_0)，并将其添加到知识库（KB）中。相应更新 known_map 并将适当的表达式添加到知识库。
+    对于 t 在 range(agent.num_timesteps) 中：
+    添加 pacphysics、动作和感知信息到知识库。使用 SLAMSensorAxioms、SLAMSuccessorAxioms 和 numAdjWallsPerceptRules。
+    使用更新的知识库查找可证明的墙位置。
+    使用更新的知识库查找可能的 Pacman 位置。
+    在时间 t 上调用 agent.moveToNextState(action_t)。
+    生成 known_map 和 possible_locations。
+    '''
+
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time= 0))
+    KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
+    known_map[pac_x_0][pac_y_0] = 0
 
     for t in range(agent.num_timesteps):
-        "*** END YOUR CODE HERE ***"
-        yield (known_map, possible_locations)
+        KB.append(pacphysicsAxioms(t, all_coords, non_outer_wall_coords, known_map, sensorModel=  SLAMSensorAxioms,successorAxioms= SLAMSuccessorAxioms))
+        KB.append(numAdjWallsPerceptRules(t, agent.getPercepts()))
+        KB.append(PropSymbolExpr(agent.actions[t], time= t))
+
+        for x, y in non_outer_wall_coords:
+            if entails(conjoin(KB), PropSymbolExpr(wall_str, x, y)):
+                known_map[x][y] = 1
+                KB.append(PropSymbolExpr(wall_str, x, y))
+            elif entails(conjoin(KB), ~PropSymbolExpr(wall_str, x, y)):
+                known_map[x][y] = 0
+                KB.append(~PropSymbolExpr(wall_str, x, y))
+
+        possible_locations = []
+        for x, y in non_outer_wall_coords:
+            if findModel(conjoin(KB) & PropSymbolExpr(pacman_str, x, y, time= t)):
+                possible_locations.append((x, y))
+            if entails(conjoin(KB), PropSymbolExpr(pacman_str, x, y, time= t)):
+                KB.append(PropSymbolExpr(pacman_str, x, y, time= t))
+            elif entails(conjoin(KB), ~PropSymbolExpr(pacman_str, x, y, time= t)):
+                KB.append(~PropSymbolExpr(pacman_str, x, y, time= t))
+        
+        agent.moveToNextState(agent.actions[t])
+        yield known_map, possible_locations
+
+    # util.raiseNotDefined()
+    "*** END YOUR CODE HERE ***"
+
+    # for t in range(agent.num_timesteps):
+    #     "*** END YOUR CODE HERE ***"
+    #     yield known_map, possible_locations
+
+    # util.raiseNotDefined()
+
+    # for t in range(agent.num_timesteps):
+    #     "*** END YOUR CODE HERE ***"
+    #     yield known_map, possible_locations
+    # util.raiseNotDefined()
+
+    # for t in range(agent.num_timesteps):
+    #     "*** END YOUR CODE HERE ***"
+    #     yield (known_map, possible_locations)
 
 
 # Abbreviations
