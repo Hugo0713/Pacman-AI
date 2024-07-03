@@ -102,7 +102,29 @@ def joinFactors(factors: List[Factor]):
 
 
     "*** YOUR CODE HERE ***"
-    raiseNotDefined()
+    unconditioned = []
+    conditioned = []
+    variableDomainsDict = list(factors)[0].variableDomainsDict()
+    
+    for factor in factors:
+        for variable in factor.unconditionedVariables():
+            if variable not in unconditioned:
+                unconditioned.append(variable)
+            if variable in conditioned:
+                conditioned.remove(variable)
+        for variable in factor.conditionedVariables():
+            if variable not in unconditioned:
+                if variable not in conditioned:
+                    conditioned.append(variable)
+
+    new_factor = Factor(unconditioned, conditioned, variableDomainsDict)
+    for assignment in new_factor.getAllPossibleAssignmentDicts():
+        prob = 1
+        for factor in factors:
+            prob *= factor.getProbability(assignment)
+        new_factor.setProbability(assignment, prob)
+    return new_factor 
+    # raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
 ########### ########### ###########
@@ -153,7 +175,24 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        unconditioned = []
+        conditioned = []
+        variableDomainsDict = factor.variableDomainsDict()
+        for variable in factor.unconditionedVariables():
+            if variable != eliminationVariable:
+                unconditioned.append(variable)
+        for variable in factor.conditionedVariables():
+            if variable != eliminationVariable:
+                conditioned.append(variable)
+        new_factor = Factor(unconditioned, conditioned, variableDomainsDict)
+        for assignment in new_factor.getAllPossibleAssignmentDicts():
+            prob = 0
+            for value in factor.variableDomainsDict()[eliminationVariable]:
+                assignment[eliminationVariable] = value
+                prob += factor.getProbability(assignment)
+            new_factor.setProbability(assignment, prob)
+        return new_factor
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
     return eliminate
