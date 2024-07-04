@@ -198,7 +198,20 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
             eliminationOrder = sorted(list(eliminationVariables))
 
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # 获得所有条件概率表
+        factors = bayesNet.getAllCPTsWithEvidence(evidenceDict)
+        # 将所有条件概率表联合起来
+        for var in eliminationOrder:
+            factors, joinedFactor = joinFactorsByVariable(factors, var)
+            # 特判：如果joinedFactor中只有一个未条件化变量，那么不需要消除它
+            if len(joinedFactor.unconditionedVariables()) > 1:
+                factors.append(eliminate(joinedFactor, var))
+        # 将所有因子联合起来
+        fullJoint = joinFactors(factors)
+        # 归一化
+        queryConditionedOnEvidence = normalize(fullJoint)
+        return queryConditionedOnEvidence
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
 
@@ -339,7 +352,11 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        total = self.total()
+        if total != 0:
+            for key in self.keys():
+                self[key] /= total
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
     def sample(self):
@@ -364,7 +381,17 @@ class DiscreteDistribution(dict):
         0.0
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        total = self.total()
+        if total == 0:
+            return None
+        # 生成一个随机数
+        rand = random.uniform(0, total)
+        # 从字典中取出一个元素
+        for key in self.keys():
+            rand -= self[key]
+            if rand <= 0:
+                return key
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
 
@@ -439,7 +466,17 @@ class InferenceModule:
         Return the probability P(noisyDistance | pacmanPosition, ghostPosition).
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # 计算真实距离
+        trueDistance = manhattanDistance(pacmanPosition, ghostPosition)
+        # 计算噪声距离的概率
+        if ghostPosition == jailPosition:
+            if noisyDistance == None:
+                return 1
+            return 0
+        if noisyDistance == None:
+            return 0
+        return busters.getObservationProbability(noisyDistance, trueDistance)
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
     def setGhostPosition(self, gameState, ghostPosition, index):
@@ -552,7 +589,12 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # 计算P(noisyDistance | pacmanPosition, ghostPosition)
+        pacmanPosition = gameState.getPacmanPosition()
+        jailPosition = self.getJailPosition()
+        for ghostPosition in self.allPositions:
+            self.beliefs[ghostPosition] *= self.getObservationProb(observation, pacmanPosition, ghostPosition, jailPosition)
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
         self.beliefs.normalize()
     
@@ -570,7 +612,14 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        newBeliefs = DiscreteDistribution()
+        for oldPos in self.allPositions:
+            # 获得新的位置分布
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+            for newPos, prob in newPosDist.items():
+                newBeliefs[newPos] += self.beliefs[oldPos] * prob
+        self.beliefs = newBeliefs
+        # raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
     def getBeliefDistribution(self):
