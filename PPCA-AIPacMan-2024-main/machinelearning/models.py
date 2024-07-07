@@ -13,7 +13,6 @@ from torch import optim, tensor, tensordot, empty, ones
 from torch.nn.functional import cross_entropy, relu, mse_loss
 from torch import movedim
 
-
 class PerceptronModel(Module):
     def __init__(self, dimensions):
         """
@@ -57,7 +56,7 @@ class PerceptronModel(Module):
         The pytorch function `tensordot` may be helpful here.
         """
         "*** YOUR CODE HERE ***"
-        score = tensordot(x, self.w, dims = 2)
+        score = tensordot(self.w, x)
         return score
 
 
@@ -86,6 +85,7 @@ class PerceptronModel(Module):
             dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
             "*** YOUR CODE HERE ***"
             
+            # 全部正确分类时停止
             while True:
                 flag = True
                 for sample in dataloader:
@@ -93,16 +93,10 @@ class PerceptronModel(Module):
                     y = tensor([y])
                     y_prediction = self.get_prediction(x)
                     if y != y_prediction:
-                        self.w += y * x
+                        self.w +=  y * x
                         flag = False
                 if flag:
                     break
-
-
-
-
-
-
 
 class RegressionModel(Module):
     """
@@ -114,11 +108,8 @@ class RegressionModel(Module):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
         super(RegressionModel, self).__init__()
-        self.layer1 = Linear(1, 128)
-        self.layer2 = Linear(128, 200)
-        self.layer3 = Linear(200, 1)
-        # super().__init__()
-
+        self.layer1 = Linear(1, 256)
+        self.layer2 = Linear(256, 1)
 
 
     def forward(self, x):
@@ -131,12 +122,12 @@ class RegressionModel(Module):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
-        x = relu(self.layer1(x))
-        x = relu(self.layer2(x))
-        x = self.layer3(x)
+        x = self.layer1(x)
+        x = relu(x)
+        x = self.layer2(x)
         return x
+        
 
-    
     def get_loss(self, x, y):
         """
         Computes the loss for a batch of examples.
@@ -149,8 +140,7 @@ class RegressionModel(Module):
         """
         "*** YOUR CODE HERE ***"
         return mse_loss(self.forward(x), y)
- 
-  
+        
 
     def train(self, dataset):
         """
@@ -167,17 +157,21 @@ class RegressionModel(Module):
             
         """
         "*** YOUR CODE HERE ***"
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-        optimizer = optim.SGD(self.parameters(), lr=0.01)
-        for sample in dataloader:
-            x, y = sample['x'], sample['label']
-            optimizer.zero_grad()
-            loss = self.get_loss(x, y)
-            loss.backward()
-            optimizer.step()
-
-
-
+        # optimizer = optim.SGD(self.parameters(), lr=0.005)
+        optimizer = optim.Adam(self.parameters(), lr=0.005)
+        dataloader = DataLoader(dataset, batch_size=dataset.__len__(), shuffle=True)
+        while True:
+            flag = True
+            for sample in dataloader:
+                x, y = sample['x'], sample['label']
+                optimizer.zero_grad()
+                loss = self.get_loss(x, y)
+                loss.backward()
+                optimizer.step()
+                if loss.item() > 0.01:
+                    flag = False
+            if flag:
+                break
 
 
 class DigitClassificationModel(Module):
