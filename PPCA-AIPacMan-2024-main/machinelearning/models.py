@@ -1,6 +1,7 @@
 from torch import no_grad, stack
 from torch.utils.data import DataLoader
 from torch.nn import Module
+import torch
 
 
 """
@@ -357,8 +358,8 @@ class LanguageIDModel(Module):
         """
         "*** YOUR CODE HERE ***"
         optimizer = optim.Adam(self.parameters(), lr=0.001)
-        dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
-        for epoch in range(10):
+        dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+        for epoch in range(15):
             for sample in dataloader:
                 x, y = sample['x'], sample['label']
                 x = movedim(x, 0, 1)
@@ -371,9 +372,6 @@ class LanguageIDModel(Module):
                     break
             if dataset.get_validation_accuracy() > 0.81:
                 break
-        
-
-
         
 
 def Convolve(input: tensor, weight: tensor):
@@ -393,8 +391,14 @@ def Convolve(input: tensor, weight: tensor):
     weight_dimensions = weight.shape
     Output_Tensor = tensor(())
     "*** YOUR CODE HERE ***"
+    output_rows = input_tensor_dimensions[0] - weight_dimensions[0] + 1
+    output_cols = input_tensor_dimensions[1] - weight_dimensions[1] + 1
+    Output_Tensor = torch.zeros(output_rows, output_cols)
 
-    
+    for i in range(output_rows):
+        for j in range(output_cols):
+            subtensor = input[i:i + weight_dimensions[0], j:j + weight_dimensions[1]]
+            Output_Tensor[i, j] = tensordot(subtensor, weight)
     "*** End Code ***"
     return Output_Tensor
 
@@ -419,6 +423,10 @@ class DigitConvolutionalModel(Module):
 
         self.convolution_weights = Parameter(ones((3, 3)))
         """ YOUR CODE HERE """
+        input_size = 26 * 26
+        self.layer1 = Linear(input_size, 256)
+        self.layer2 = Linear(256, 256)
+        self.layer3 = Linear(256, output_size)
 
 
     def run(self, x):
@@ -430,8 +438,13 @@ class DigitConvolutionalModel(Module):
         x = stack(list(map(lambda sample: Convolve(sample, self.convolution_weights), x)))
         x = x.flatten(start_dim=1)
         """ YOUR CODE HERE """
+        x = self.layer1(x)
+        x = relu(x)
+        x = self.layer2(x)
+        x = relu(x)
+        x = self.layer3(x)
+        return x
 
- 
 
     def get_loss(self, x, y):
         """
@@ -447,6 +460,7 @@ class DigitConvolutionalModel(Module):
         Returns: a loss tensor
         """
         """ YOUR CODE HERE """
+        return cross_entropy(self.run(x), y)
 
         
 
@@ -455,4 +469,17 @@ class DigitConvolutionalModel(Module):
         Trains the model.
         """
         """ YOUR CODE HERE """
- 
+        optimizer = optim.Adam(self.parameters(), lr=0.001)
+        dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+        for epoch in range(15):
+            for sample in dataloader:
+                x, y = sample['x'], sample['label']
+                optimizer.zero_grad()
+                loss = self.get_loss(x, y)
+                loss.backward()
+                optimizer.step()
+                print(dataset.get_validation_accuracy())
+                if dataset.get_validation_accuracy() > 0.81:
+                    break
+            if dataset.get_validation_accuracy() > 0.81:
+                break
