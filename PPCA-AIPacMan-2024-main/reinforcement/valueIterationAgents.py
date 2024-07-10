@@ -65,6 +65,20 @@ class ValueIterationAgent(ValueEstimationAgent):
           value iteration, V_k+1(...) depends on V_k(...)'s.
         """
         "*** YOUR CODE HERE ***"
+        for iteration in range(self.iterations):
+            temp = self.values.copy()
+            # 获得所有后继状态
+            for state in self.mdp.getStates():
+                if self.mdp.isTerminal(state):
+                    continue
+                maxvalue = float('-inf')
+                # 计算该状态下所有action的期望最大值
+                for action in self.mdp.getPossibleActions(state):
+                    total = 0
+                    for nextstate, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+                        total += prob *(self.mdp.getReward(state, action, nextstate) + self.discount * temp[nextstate])
+                    maxvalue = max(maxvalue, total)
+                self.values[state] = maxvalue
 
 
     def getValue(self, state):
@@ -79,6 +93,14 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
+        qvalue = 0
+        # 计算state，action的期望效用
+        for nextstate, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+            reward = self.mdp.getReward(state, action, nextstate)
+            # 根据转移概率、即时奖励和discount后的下一个状态的值更新qvalue
+            qvalue += prob * (reward + self.discount * self.values[nextstate])
+        return qvalue
+        
  
 
     def computeActionFromValues(self, state):
@@ -91,7 +113,20 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-
+        # 获得所有合法actions
+        actions = self.mdp.getPossibleActions(state)
+        if len(actions) == 0:
+            return None
+        best_action = None
+        max_qvalue = float('-inf')
+        # 遍历action
+        for action in actions:
+            qvalue = self.getQValue(state, action)
+            # 根据Q值更新
+            if qvalue > max_qvalue:
+                max_qvalue = qvalue
+                best_action = action
+        return best_action
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
