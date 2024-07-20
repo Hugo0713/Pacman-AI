@@ -1,11 +1,11 @@
 {
-    "python.analysis.typeCheckingMode": "off",
     "files.associations": {
+        "random": "cpp",
+        "chrono": "cpp",
         "array": "cpp",
         "atomic": "cpp",
         "*.tcc": "cpp",
         "cctype": "cpp",
-        "chrono": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
         "cstdarg": "cpp",
@@ -27,7 +27,6 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "optional": "cpp",
-        "random": "cpp",
         "ratio": "cpp",
         "string": "cpp",
         "string_view": "cpp",
@@ -45,6 +44,7 @@
         "sstream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
-        "typeinfo": "cpp"
-    }
+        "typeinfo": "cpp",
+        "clangd.arguments": ["--all-scopes-completion", "--background-index", "--clang-tidy", "--header-insertion=iwyu"]
+        }
 }
