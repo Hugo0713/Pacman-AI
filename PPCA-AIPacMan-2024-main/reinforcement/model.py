@@ -5,6 +5,7 @@ Please avoid importing any other torch functions or modules.
 Your code will not pass if the gradescope autograder detects any changed imports
 """
 
+import torch
 from torch.nn import Module
 from torch.nn import  Linear
 from torch import tensor, double, optim
@@ -25,12 +26,14 @@ class DeepQNetwork(Module):
         # and self.batch_size!
         "*** YOUR CODE HERE ***"
         self.learning_rate = 0.001
-        self.numTrainingGames = 5000
+        self.numTrainingGames = 3000
         self.batch_size = 256
-        self.layer1 = Linear(state_dim, 512)
-        self.layer2 = Linear(512, 512)
-        self.layer3 = Linear(512, action_dim)
-
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.layer1 = Linear(state_dim, 512).to(self.device)
+        self.layer2 = Linear(512, 512).to(self.device)
+        self.layer3 = Linear(512, action_dim).to(self.device)
+        self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        
         "**END CODE"""
         self.double()
 
@@ -46,9 +49,8 @@ class DeepQNetwork(Module):
             loss node between Q predictions and Q_target
         """
         "*** YOUR CODE HERE ***"
-        Q_prediction = self.forward(states)
-        return mse_loss(Q_prediction, Q_target)
-
+        Q_target_tensor = tensor(Q_target, dtype=double, device=self.device)
+        return mse_loss(self.forward(states), Q_target_tensor)
 
 
     def forward(self, states):
@@ -65,6 +67,8 @@ class DeepQNetwork(Module):
                 scores, for each of the actions
         """
         "*** YOUR CODE HERE ***"
+        if states.device.type != self.device.type:
+            states = states.to(self.device)
         x = relu(self.layer1(states))
         x = relu(self.layer2(x))
         return self.layer3(x)
@@ -88,7 +92,7 @@ class DeepQNetwork(Module):
             None
         """
         "*** YOUR CODE HERE ***"
-        self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        
         self.optimizer.zero_grad()
         loss = self.get_loss(states, Q_target)
         loss.backward()
