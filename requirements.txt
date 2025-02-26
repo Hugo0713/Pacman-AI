@@ -1,0 +1,5 @@
+# 项目所需的 Python 依赖项
+
+numpy==1.21.0
+torch==1.9.0
+cudatoolkit==11.1 
